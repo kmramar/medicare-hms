@@ -42,6 +42,11 @@ class User extends Authenticatable
         return $this->hasOne(DoctorProfile::class);
     }
 
+    public function patientProfile()
+    {
+        return $this->hasOne(PatientProfile::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

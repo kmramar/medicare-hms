@@ -13,6 +13,12 @@ use App\Http\Controllers\Doctor\DoctorPatientController;
 use App\Http\Controllers\Doctor\DoctorPrescriptionController;
 use App\Http\Controllers\Doctor\DoctorScheduleController;
 use App\Http\Controllers\Doctor\DoctorProfileController;
+use App\Http\Controllers\Patient\PatientDashboardController;
+use App\Http\Controllers\Patient\PatientDoctorController;
+use App\Http\Controllers\Patient\PatientAppointmentController;
+use App\Http\Controllers\Patient\PatientPrescriptionController;
+use App\Http\Controllers\Patient\PatientBillingController;
+use App\Http\Controllers\Patient\PatientProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -70,5 +76,23 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
 });
 
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
-    // Patient routes will go here
+    Route::get('/dashboard', [Patient\PatientDashboardController::class, 'index']);
+
+    Route::get('/doctors', [PatientDoctorController::class, 'index']);
+    Route::get('/doctors/{id}', [PatientDoctorController::class, 'show']);
+
+    Route::get('/appointments', [PatientAppointmentController::class, 'index']);
+    Route::post('/appointments', [PatientAppointmentController::class, 'store']);
+    Route::post('/appointments/{id}/cancel', [PatientAppointmentController::class, 'cancel']);
+
+    Route::get('/prescriptions', [PatientPrescriptionController::class, 'index']);
+    Route::get('/prescriptions/{id}', [PatientPrescriptionController::class, 'show']);
+
+    Route::get('/billings', [PatientBillingController::class, 'index']);
+    Route::get('/billings/{id}', [PatientBillingController::class, 'show']);
+    Route::post('/billings/{id}/pay', [PatientBillingController::class, 'pay']);
+
+    Route::get('/profile', [PatientProfileController::class, 'show']);
+    Route::put('/profile', [PatientProfileController::class, 'update']);
+    Route::post('/profile/photo', [PatientProfileController::class, 'uploadPhoto']);
 });
