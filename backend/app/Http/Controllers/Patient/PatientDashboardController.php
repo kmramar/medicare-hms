@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
-class PatientProfileController extends Controller
+class PatientDashboardController extends Controller
 {
     public function show()
     {

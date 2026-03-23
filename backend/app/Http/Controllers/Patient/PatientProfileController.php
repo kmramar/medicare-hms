@@ -10,46 +10,44 @@ use Illuminate\Support\Facades\Storage;
 
 class PatientProfileController extends Controller
 {
+    private function formatProfile(PatientProfile $profile): array
+    {
+        return [
+            'id'                      => $profile->id,
+            'user_id'                 => $profile->user_id,
+            'date_of_birth'           => $profile->date_of_birth,
+            'gender'                  => $profile->gender,
+            'phone'                   => $profile->phone,
+            'address'                 => $profile->address,
+            'blood_type'              => $profile->blood_type,
+            'emergency_contact_name'  => $profile->emergency_contact_name,
+            'emergency_contact_phone' => $profile->emergency_contact_phone,
+            'photo_url'               => $profile->photo_path
+                ? Storage::url($profile->photo_path)
+                : null,
+        ];
+    }
+
     public function show()
     {
-        $user = Auth::user();
-        
-        $profile = PatientProfile::where('user_id', $user->id)->first();
+        $user    = Auth::user();
+        $profile = PatientProfile::firstOrCreate(['user_id' => $user->id]);
 
-        if (!$profile) {
-            $profile = PatientProfile::create([
-                'user_id' => $user->id,
-            ]);
-        }
-
-        return response()->json([
-            'id' => $profile->id,
-            'user_id' => $profile->user_id,
-            'date_of_birth' => $profile->date_of_birth,
-            'gender' => $profile->gender,
-            'phone' => $profile->phone,
-            'address' => $profile->address,
-            'blood_type' => $profile->blood_type,
-            'emergency_contact_name' => $profile->emergency_contact_name,
-            'emergency_contact_phone' => $profile->emergency_contact_phone,
-            'photo_url' => $profile->photo_path 
-                ? Storage::url($profile->photo_path) 
-                : null,
-        ]);
+        return response()->json($this->formatProfile($profile));
     }
 
     public function update(Request $request)
     {
         $user = Auth::user();
-        
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'date_of_birth' => 'nullable|date',
-            'gender' => 'nullable|string|in:male,female,other',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'blood_type' => 'nullable|string|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
-            'emergency_contact_name' => 'nullable|string|max:255',
+            'name'                    => 'required|string|max:255',
+            'date_of_birth'           => 'nullable|date',
+            'gender'                  => 'nullable|string|in:male,female,other',
+            'phone'                   => 'nullable|string|max:20',
+            'address'                 => 'nullable|string|max:500',
+            'blood_type'              => 'nullable|string|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
+            'emergency_contact_name'  => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:20',
         ]);
 
@@ -58,29 +56,19 @@ class PatientProfileController extends Controller
         $profile = PatientProfile::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'date_of_birth' => $validated['date_of_birth'] ?? null,
-                'gender' => $validated['gender'] ?? null,
-                'phone' => $validated['phone'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'blood_type' => $validated['blood_type'] ?? null,
-                'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
+                'date_of_birth'           => $validated['date_of_birth'] ?? null,
+                'gender'                  => $validated['gender'] ?? null,
+                'phone'                   => $validated['phone'] ?? null,
+                'address'                 => $validated['address'] ?? null,
+                'blood_type'              => $validated['blood_type'] ?? null,
+                'emergency_contact_name'  => $validated['emergency_contact_name'] ?? null,
                 'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
             ]
         );
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'profile' => [
-                'id' => $profile->id,
-                'user_id' => $profile->user_id,
-                'date_of_birth' => $profile->date_of_birth,
-                'gender' => $profile->gender,
-                'phone' => $profile->phone,
-                'address' => $profile->address,
-                'blood_type' => $profile->blood_type,
-                'emergency_contact_name' => $profile->emergency_contact_name,
-                'emergency_contact_phone' => $profile->emergency_contact_phone,
-            ],
+            'profile' => $this->formatProfile($profile),
         ]);
     }
 
@@ -90,7 +78,7 @@ class PatientProfileController extends Controller
             'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $user = Auth::user();
+        $user    = Auth::user();
         $profile = PatientProfile::where('user_id', $user->id)->first();
 
         if ($profile && $profile->photo_path) {
@@ -105,7 +93,7 @@ class PatientProfileController extends Controller
         );
 
         return response()->json([
-            'message' => 'Photo uploaded successfully',
+            'message'   => 'Photo uploaded successfully',
             'photo_url' => Storage::url($path),
         ]);
     }

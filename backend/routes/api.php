@@ -19,6 +19,8 @@ use App\Http\Controllers\Patient\PatientAppointmentController;
 use App\Http\Controllers\Patient\PatientPrescriptionController;
 use App\Http\Controllers\Patient\PatientBillingController;
 use App\Http\Controllers\Patient\PatientProfileController;
+use App\Http\Controllers\ProfilePhotoController;
+use App\Http\Controllers\MedicalDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -38,6 +40,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/doctors', [AdminDoctorController::class, 'store']);
     Route::put('/doctors/{id}', [AdminDoctorController::class, 'update']);
     Route::delete('/doctors/{id}', [AdminDoctorController::class, 'destroy']);
+    Route::post('/doctors/{id}/photo', [ProfilePhotoController::class, 'uploadDoctorPhoto']);
 
     Route::get('/patients', [AdminPatientController::class, 'index']);
     Route::get('/patients/{id}', [AdminPatientController::class, 'show']);
@@ -72,11 +75,11 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
 
     Route::get('/profile', [DoctorProfileController::class, 'show']);
     Route::put('/profile', [DoctorProfileController::class, 'update']);
-    Route::post('/profile/photo', [DoctorProfileController::class, 'uploadPhoto']);
+    Route::post('/profile/photo', [ProfilePhotoController::class, 'uploadDoctorSelfPhoto']);
 });
 
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
-    Route::get('/dashboard', [Patient\PatientDashboardController::class, 'index']);
+    Route::get('/dashboard', [PatientDashboardController::class, 'index']);
 
     Route::get('/doctors', [PatientDoctorController::class, 'index']);
     Route::get('/doctors/{id}', [PatientDoctorController::class, 'show']);
@@ -94,5 +97,9 @@ Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(functio
 
     Route::get('/profile', [PatientProfileController::class, 'show']);
     Route::put('/profile', [PatientProfileController::class, 'update']);
-    Route::post('/profile/photo', [PatientProfileController::class, 'uploadPhoto']);
+    Route::post('/profile/photo', [ProfilePhotoController::class, 'uploadPatientPhoto']);
+
+    Route::post('/documents/upload', [MedicalDocumentController::class, 'upload']);
+    Route::get('/documents', [MedicalDocumentController::class, 'list']);
+    Route::delete('/documents/{index}', [MedicalDocumentController::class, 'delete']);
 });
