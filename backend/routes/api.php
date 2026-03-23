@@ -7,6 +7,12 @@ use App\Http\Controllers\Admin\AdminPatientController;
 use App\Http\Controllers\Admin\AdminAppointmentController;
 use App\Http\Controllers\Admin\AdminBedController;
 use App\Http\Controllers\Admin\AdminBillingController;
+use App\Http\Controllers\Doctor\DoctorDashboardController;
+use App\Http\Controllers\Doctor\DoctorAppointmentController;
+use App\Http\Controllers\Doctor\DoctorPatientController;
+use App\Http\Controllers\Doctor\DoctorPrescriptionController;
+use App\Http\Controllers\Doctor\DoctorScheduleController;
+use App\Http\Controllers\Doctor\DoctorProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -43,7 +49,24 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 });
 
 Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function () {
-    // Doctor routes will go here
+    Route::get('/dashboard', [DoctorDashboardController::class, 'index']);
+
+    Route::get('/appointments', [DoctorAppointmentController::class, 'index']);
+    Route::put('/appointments/{id}', [DoctorAppointmentController::class, 'update']);
+
+    Route::get('/patients', [DoctorPatientController::class, 'index']);
+    Route::get('/patients/{id}', [DoctorPatientController::class, 'show']);
+
+    Route::get('/prescriptions', [DoctorPrescriptionController::class, 'index']);
+    Route::post('/prescriptions', [DoctorPrescriptionController::class, 'store']);
+    Route::get('/prescriptions/{id}', [DoctorPrescriptionController::class, 'show']);
+
+    Route::get('/schedule', [DoctorScheduleController::class, 'show']);
+    Route::put('/schedule', [DoctorScheduleController::class, 'update']);
+
+    Route::get('/profile', [DoctorProfileController::class, 'show']);
+    Route::put('/profile', [DoctorProfileController::class, 'update']);
+    Route::post('/profile/photo', [DoctorProfileController::class, 'uploadPhoto']);
 });
 
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
