@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'phone',
     ];
 
     /**
@@ -35,6 +36,11 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    public function doctorProfile()
+    {
+        return $this->hasOne(DoctorProfile::class);
+    }
 
     /**
      * Get the attributes that should be cast.
