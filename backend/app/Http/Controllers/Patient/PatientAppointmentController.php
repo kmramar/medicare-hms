@@ -8,6 +8,7 @@ use App\Models\DoctorProfile;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class PatientAppointmentController extends Controller
 {
@@ -16,9 +17,16 @@ class PatientAppointmentController extends Controller
         $patient = Auth::user();
         
         $query = Appointment::with('doctorProfile.user')
-            ->where('patient_id', $patient->id)
-            ->orderBy('appointment_date', 'desc')
-            ->orderBy('appointment_time', 'desc');
+            ->where('patient_id', $patient->id);
+
+        // Check if columns exist before ordering
+        if (Schema::hasColumn('appointments', 'appointment_date')) {
+            $query->orderBy('appointment_date', 'desc');
+        }
+        
+        if (Schema::hasColumn('appointments', 'appointment_time')) {
+            $query->orderBy('appointment_time', 'desc');
+        }
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -29,8 +37,8 @@ class PatientAppointmentController extends Controller
                 'id' => $appointment->id,
                 'doctor_name' => $appointment->doctorProfile?->user?->name ?? 'Unknown',
                 'specialty' => $appointment->doctorProfile?->specialty ?? 'N/A',
-                'appointment_date' => $appointment->appointment_date,
-                'appointment_time' => $appointment->appointment_time,
+                'appointment_date' => $appointment->appointment_date ?? $appointment->date ?? null,
+                'appointment_time' => $appointment->appointment_time ?? $appointment->time ?? null,
                 'symptoms' => $appointment->symptoms,
                 'notes' => $appointment->notes,
                 'status' => $appointment->status,
@@ -53,24 +61,27 @@ class PatientAppointmentController extends Controller
 
         $doctor = DoctorProfile::findOrFail($validated['doctor_id']);
 
-        $appointmentDate = Carbon::parse($validated['appointment_date']);
-        $dayOfWeek = strtolower($appointmentDate->format('l'));
-        $availableDays = array_map('strtolower', explode(',', $doctor->available_days));
+        // Check if doctor has schedule columns
+        if ($doctor->available_days && $doctor->available_time_start && $doctor->available_time_end) {
+            $appointmentDate = Carbon::parse($validated['appointment_date']);
+            $dayOfWeek = strtolower($appointmentDate->format('l'));
+            $availableDays = array_map('strtolower', explode(',', $doctor->available_days));
 
-        if (!in_array($dayOfWeek, $availableDays)) {
-            return response()->json([
-                'message' => "Doctor is not available on {$appointmentDate->format('l')}"
-            ], 422);
-        }
+            if (!in_array($dayOfWeek, $availableDays)) {
+                return response()->json([
+                    'message' => "Doctor is not available on {$appointmentDate->format('l')}"
+                ], 422);
+            }
 
-        $requestedTime = Carbon::parse($validated['appointment_time']);
-        $startTime = Carbon::parse($doctor->available_time_start);
-        $endTime = Carbon::parse($doctor->available_time_end);
+            $requestedTime = Carbon::parse($validated['appointment_time']);
+            $startTime = Carbon::parse($doctor->available_time_start);
+            $endTime = Carbon::parse($doctor->available_time_end);
 
-        if ($requestedTime->lt($startTime) || $requestedTime->gt($endTime)) {
-            return response()->json([
-                'message' => 'Requested time is outside doctor\'s working hours'
-            ], 422);
+            if ($requestedTime->lt($startTime) || $requestedTime->gt($endTime)) {
+                return response()->json([
+                    'message' => 'Requested time is outside doctor\'s working hours'
+                ], 422);
+            }
         }
 
         $existingAppointment = Appointment::where('doctor_id', $validated['doctor_id'])
@@ -85,15 +96,28 @@ class PatientAppointmentController extends Controller
             ], 422);
         }
 
-        $appointment = Appointment::create([
+        $appointmentData = [
             'patient_id' => Auth::id(),
             'doctor_id' => $validated['doctor_id'],
-            'appointment_date' => $validated['appointment_date'],
-            'appointment_time' => $validated['appointment_time'],
             'symptoms' => $validated['symptoms'],
             'notes' => $validated['notes'] ?? null,
             'status' => 'pending',
-        ]);
+        ];
+
+        // Add date and time if columns exist
+        if (Schema::hasColumn('appointments', 'appointment_date')) {
+            $appointmentData['appointment_date'] = $validated['appointment_date'];
+        } else {
+            $appointmentData['date'] = $validated['appointment_date'];
+        }
+
+        if (Schema::hasColumn('appointments', 'appointment_time')) {
+            $appointmentData['appointment_time'] = $validated['appointment_time'];
+        } else {
+            $appointmentData['time'] = $validated['appointment_time'];
+        }
+
+        $appointment = Appointment::create($appointmentData);
 
         return response()->json([
             'message' => 'Appointment booked successfully',

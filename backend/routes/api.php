@@ -79,7 +79,7 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
 });
 
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
-    Route::get('/dashboard', [PatientDashboardController::class, 'index']);
+    Route::get('/dashboard', [PatientDashboardController::class, 'show']);
 
     Route::get('/doctors', [PatientDoctorController::class, 'index']);
     Route::get('/doctors/{id}', [PatientDoctorController::class, 'show']);

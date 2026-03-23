@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'doctor' => DoctorMiddleware::class,
             'patient' => PatientMiddleware::class,
         ]);
+
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
