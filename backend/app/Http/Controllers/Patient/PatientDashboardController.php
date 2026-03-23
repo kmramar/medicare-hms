@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
+use App\Models\Billing;
 use App\Models\PatientProfile;
-use App\Models\User; // User model import kiya
+use App\Models\Prescription;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -14,23 +17,49 @@ class PatientDashboardController extends Controller
     public function show()
     {
         $user = Auth::user();
-        
-        // Find or create profile
-        $profile = PatientProfile::firstOrCreate(['user_id' => $user->id]);
+
+        // Calculate stats
+        $upcomingAppointments = Appointment::where('patient_id', $user->id)
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->where('date', '>=', now()->toDateString())
+            ->count();
+
+        $completedAppointments = Appointment::where('patient_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+
+        $totalPrescriptions = Prescription::where('patient_id', $user->id)->count();
+
+        $pendingBills = Billing::where('patient_id', $user->id)
+            ->where('status', '!=', 'paid')
+            ->count();
+
+        // Recent appointments
+        $recentAppointments = Appointment::where('patient_id', $user->id)
+            ->with('doctor:id,name', 'doctorProfile:specialty,user_id')
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($appointment) {
+                return [
+                    'id' => $appointment->id,
+                    'doctor_name' => $appointment->doctor->name,
+                    'specialty' => $appointment->doctorProfile->specialty ?? 'General',
+                    'appointment_date' => $appointment->date,
+                    'appointment_time' => $appointment->time,
+                    'status' => $appointment->status,
+                ];
+            });
 
         return response()->json([
-            'id' => $profile->id,
-            'user_id' => $profile->user_id,
-            'date_of_birth' => $profile->date_of_birth,
-            'gender' => $profile->gender,
-            'phone' => $profile->phone,
-            'address' => $profile->address,
-            'blood_type' => $profile->blood_type,
-            'emergency_contact_name' => $profile->emergency_contact_name,
-            'emergency_contact_phone' => $profile->emergency_contact_phone,
-            'photo_url' => $profile->photo_path 
-                ? Storage::url($profile->photo_path) 
-                : null,
+            'stats' => [
+                'upcomingAppointments' => $upcomingAppointments,
+                'completedAppointments' => $completedAppointments,
+                'totalPrescriptions' => $totalPrescriptions,
+                'pendingBills' => $pendingBills,
+            ],
+            'recent_appointments' => $recentAppointments,
         ]);
     }
 
